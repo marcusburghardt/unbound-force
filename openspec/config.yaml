@@ -1,8 +1,8 @@
 schema: unbound-force
 
 context: |
-  This project follows the Unbound Force org constitution
-  v1.1.0. Four core principles govern all work:
+  This project follows the Unbound Force org constitution.
+  Four core principles govern all work:
 
   I. Autonomous Collaboration: Heroes collaborate through
      well-defined artifacts, not runtime coupling.

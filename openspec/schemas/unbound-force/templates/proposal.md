@@ -23,7 +23,7 @@
 
 ## Constitution Alignment
 
-Assessed against Unbound Force org constitution v1.1.0.
+Assessed against the Unbound Force org constitution.
 
 ### I. Autonomous Collaboration
 

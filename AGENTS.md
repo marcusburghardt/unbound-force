@@ -24,7 +24,7 @@ Unbound Force is an organization of AI agent personas and roles for a software a
 
 ## Constitution (Highest Authority)
 
-The org constitution at `.specify/memory/constitution.md` (v1.1.0) defines four core principles that govern all hero repositories:
+The org constitution at `.specify/memory/constitution.md` defines four core principles that govern all hero repositories:
 
 1. **I. Autonomous Collaboration**: Heroes communicate through well-defined artifacts (files, reports, schemas), not runtime coupling. Every hero completes its primary function independently. Outputs are self-describing.
 2. **II. Composability First**: Every hero is independently installable and usable alone. Heroes expose extension points for integration. Combining heroes produces additive value without mandatory dependencies.
@@ -51,7 +51,7 @@ Gaze is the only hero with a functional implementation. The Divisor has a protot
 unbound-force/
 ├── .specify/
 │   ├── memory/
-│   │   └── constitution.md          # Org constitution v1.1.0 (highest authority)
+│   │   └── constitution.md          # Org constitution (highest authority)
 │   ├── templates/                   # Speckit templates (6 files)
 │   │   ├── spec-template.md
 │   │   ├── plan-template.md

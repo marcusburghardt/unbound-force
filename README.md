@@ -16,7 +16,7 @@ Unbound Force is an organization of AI agent personas (heroes) that collaborate 
 
 ## Constitution
 
-This organization is governed by a [constitution](.specify/memory/constitution.md) (v1.1.0) that defines four core principles:
+This organization is governed by a [constitution](.specify/memory/constitution.md) that defines four core principles:
 
 1. **Autonomous Collaboration** -- Heroes communicate through well-defined artifacts, not runtime coupling. Every hero completes its primary function independently.
 2. **Composability First** -- Every hero is independently installable and usable alone. Combining heroes produces additive value without mandatory dependencies.
