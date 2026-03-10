@@ -44,7 +44,17 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+
+      - name: Upload generated cask as release artifact
+        # GoReleaser writes dist/homebrew/Casks/unbound.rb with skip_upload: true.
+        # Upload it so the sign-macos job can download and patch darwin checksums.
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" \
+            --repo "$GITHUB_REPOSITORY" \
+            dist/homebrew/Casks/unbound.rb \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   sign-macos:
     runs-on: macos-latest
@@ -155,7 +165,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Homebrew cask checksums
+      - name: Update Homebrew cask
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -175,17 +185,11 @@ jobs:
           echo "darwin_arm64 SHA256: $ARM64_SHA"
           echo "darwin_amd64 SHA256: $AMD64_SHA"
 
-          # Clone the Homebrew tap
-          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/unbound-force/homebrew-tap.git" tap
-          cd tap
+          # Download the GoReleaser-generated cask (uploaded by the release job)
+          gh release download "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --pattern "unbound.rb" --dir ./cask-staging
+          CASK_FILE="./cask-staging/unbound.rb"
 
-          CASK_FILE="Casks/unbound.rb"
-          if [ ! -f "$CASK_FILE" ]; then
-            echo "::error::Cask file not found: $CASK_FILE"
-            exit 1
-          fi
-
-          # Update darwin checksums in the cask file
+          # Patch darwin checksums with signed values
           awk -v amd64="$AMD64_SHA" -v arm64="$ARM64_SHA" '
             /darwin_amd64/ { found_amd64=1 }
             /darwin_arm64/ { found_arm64=1 }
@@ -198,15 +202,20 @@ jobs:
               found_arm64=0
             }
             { print }
-          ' "$CASK_FILE" > "${CASK_FILE}.tmp"
-          mv "${CASK_FILE}.tmp" "$CASK_FILE"
+          ' "$CASK_FILE" > "${CASK_FILE}.patched"
+          mv "${CASK_FILE}.patched" "$CASK_FILE"
 
-          # Commit and push
+          # Push to the Homebrew tap
+          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/unbound-force/homebrew-tap.git" tap
+          cp "$CASK_FILE" tap/Casks/unbound.rb
+
+          cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$CASK_FILE"
-          git diff --cached --quiet && { echo "No checksum changes needed"; exit 0; }
-          git commit -m "Update macOS checksums for unbound v${VERSION} (post-signing)"
+          git add Casks/unbound.rb
+          git diff --cached --quiet && { echo "No cask changes needed"; exit 0; }
+          git commit -m "feat: update unbound cask to v${VERSION} (signed)"
           git push
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
