@@ -1,5 +1,5 @@
 ---
-description: Run the five-reviewer governance council to audit codebase or spec compliance.
+description: Run the reviewer governance council to audit codebase or spec compliance.
 ---
 <!-- scaffolded by gaze v1.2.7 -->
 
@@ -13,7 +13,7 @@ $ARGUMENTS
 
 ## Description
 
-Review the current codebase **or** SpecKit artifacts for compliance with the Behavioral Constraints in `AGENTS.md` using the review council (The Adversary, The Architect, The Guard, The Tester, The Operator).
+Review the current codebase **or** SpecKit artifacts for compliance with the Behavioral Constraints in `AGENTS.md` using the review council. The council dynamically discovers which reviewer agents are available rather than assuming a fixed set.
 
 ## Determine Review Mode
 
@@ -24,28 +24,56 @@ Inspect `$ARGUMENTS` to select the review mode:
 
 ---
 
+## Discover Available Reviewers
+
+Before entering either review mode, discover which reviewer agents are available:
+
+1. **Read the `.opencode/agents/` directory** using the Read tool to list all entries.
+
+2. **Filter for reviewer agents**: from the directory listing, select only entries whose filename starts with `reviewer-` and ends with `.md` (e.g., `reviewer-adversary.md`, `reviewer-architect.md`). Ignore subdirectories (entries ending with `/`) and non-matching files.
+
+3. **Extract agent names**: for each matching file, strip the `.md` extension to get the agent name (e.g., `reviewer-adversary.md` → `reviewer-adversary`).
+
+4. **Guard clause**: if zero reviewer agents are discovered, report to the user that no reviewer agents were found in `.opencode/agents/` and stop. Do not proceed with either review mode.
+
+5. **Note absent reviewers**: compare discovered agents against the known reviewer roles listed in the reference table below. Any known role not discovered is noted as absent. Absent reviewers are **informational only** — they do not block the review.
+
+### Known Reviewer Roles (Reference Table)
+
+This table documents known reviewer roles and their focus areas. It is used for context when delegating to discovered agents, but the **invocation list comes solely from discovery** — not from this table.
+
+| Agent Name | Persona | Code Review Focus | Spec Review Focus |
+|---|---|---|---|
+| `reviewer-adversary` | The Adversary | Security, resilience, efficiency, zero-waste, error handling, dependency CVEs, release pipeline safety | Completeness, testability, ambiguity, security gaps, dependency risks, cross-spec consistency |
+| `reviewer-architect` | The Architect | Architectural alignment, coding conventions, pattern adherence, plan alignment, DRY | Template consistency, spec-to-plan alignment, task coverage, data model coherence, inter-spec architecture |
+| `reviewer-guard` | The Guard | Intent drift detection, constitution alignment, neighborhood rule, zero-waste mandate | Intent fidelity, scope discipline, inter-spec consistency, status accuracy, user value, constitution alignment |
+| `reviewer-testing` | The Tester | Test architecture, coverage strategy, assertion depth, test isolation, regression protection | Testability of requirements, test strategy coverage, fixture feasibility, coverage expectations, contract surface |
+| `reviewer-sre` | The Operator | Release pipeline integrity, dependency health, configuration hygiene, runtime observability, upgrade paths, operational docs | Deployment feasibility, operational requirements, config management, dependency risk, maintenance burden, cross-hero operational impact |
+
+For any discovered agent not in this table, delegate with a generic review prompt appropriate to the current review mode.
+
+---
+
 ## Code Review Mode
 
 Review the current codebase for compliance with the Behavioral Constraints in `AGENTS.md`.
 
 ### Instructions
 
-1. Delegate the review to all five council agents in parallel using the Task tool:
-   - `reviewer-adversary` — audits for security, resilience, efficiency, and constraint violations
-   - `reviewer-architect` — audits for architectural alignment, coding conventions, and plan adherence
-   - `reviewer-guard` — audits for intent drift, neighborhood impact, and zero-waste compliance
-   - `reviewer-testing` — audits for test architecture, coverage strategy, assertion quality, and testing convention compliance
-   - `reviewer-sre` — audits for deployment readiness, release pipeline integrity, dependency health, operational observability, and upgrade paths
+1. **Replicate CI checks locally before delegating to council agents.** Read `.github/workflows/` to identify the exact commands CI runs, then execute those same commands. Any failure is a CRITICAL finding that must be fixed before the council review begins. Do not rely on a memorized list of commands — always derive them from the workflow files, which are the source of truth. This catches failures (e.g. linter violations) that code reading alone cannot reliably detect.
+
+2. Delegate the review to all **discovered** reviewer agents in parallel using the Task tool. For each discovered agent, use the focus area from the Known Reviewer Roles reference table to provide targeted context. For any discovered agent not in the table, use a generic prompt: "Review the current changes for quality, correctness, and compliance. Return your verdict (APPROVE or REQUEST CHANGES) along with all findings."
 
    For each agent, instruct it to review the current changes and return its verdict (**APPROVE** or **REQUEST CHANGES**) along with all findings.
 
-2. Collect all **REQUEST CHANGES** findings from the five reviewers. If all five return **APPROVE**, report the result and stop.
+3. Collect all **REQUEST CHANGES** findings from the discovered reviewers. If all discovered reviewers return **APPROVE**, report the result and stop.
 
-3. If there are **REQUEST CHANGES**, address the findings by making the necessary code fixes. Then re-run all five reviewers to verify the fixes. Repeat this loop until all five return **APPROVE** or the process has exceeded 3 iterations.
+4. If there are **REQUEST CHANGES**, address the findings by making the necessary code fixes. Then re-run all discovered reviewers to verify the fixes. Repeat this loop until all discovered reviewers return **APPROVE** or the process has exceeded 3 iterations.
 
-4. If 3 iterations are exceeded, ask the user whether to continue or stop.
+5. If 3 iterations are exceeded, ask the user whether to continue or stop.
 
-5. Provide a final report to the user:
+6. Provide a final report to the user:
+   - **Discovery summary**: how many reviewer agents were discovered, which were invoked, and which known reviewer roles were absent (informational, non-blocking)
    - What was found in each iteration
    - What was fixed
    - If stopped early, the current set of outstanding **REQUEST CHANGES**
@@ -59,16 +87,11 @@ Review all SpecKit artifacts under `specs/` for quality, consistency, and alignm
 
 ### Instructions
 
-1. Delegate the review to all five council agents in parallel using the Task tool:
-   - `reviewer-adversary` — audits specs for completeness, testability, ambiguity, security gaps, dependency risks, and cross-spec consistency
-   - `reviewer-architect` — audits specs for structural consistency, plan-to-spec alignment, task coverage, data model coherence, tech stack feasibility, and research quality
-   - `reviewer-guard` — audits specs for intent fidelity, scope creep, inter-feature conflicts, status accuracy, user value, and constitution alignment
-   - `reviewer-testing` — audits specs for testability of requirements, coverage strategy definition, fixture feasibility, and contract surface clarity
-   - `reviewer-sre` — audits specs for deployment feasibility, operational requirements, configuration management, dependency risks, maintenance burden, and cross-hero operational impact
+1. Delegate the review to all **discovered** reviewer agents in parallel using the Task tool. For each discovered agent, use the focus area from the Known Reviewer Roles reference table (selecting the Spec Review Focus column) to provide targeted context. For any discovered agent not in the table, use a generic prompt: "Review all SpecKit artifacts under `specs/` for quality, consistency, and alignment. Return your verdict (APPROVE or REQUEST CHANGES) along with all findings."
 
    For each agent, instruct it to **operate in Spec Review Mode**: review all SpecKit artifacts under `specs/` (not code), plus `.specify/memory/constitution.md` and `AGENTS.md`. Instruct the agent to return its verdict (**APPROVE** or **REQUEST CHANGES**) along with all findings.
 
-2. Collect all **REQUEST CHANGES** findings from the five reviewers. If all five return **APPROVE**, report the result and stop.
+2. Collect all **REQUEST CHANGES** findings from the discovered reviewers. If all discovered reviewers return **APPROVE**, report the result and stop.
 
 3. If there are **REQUEST CHANGES**, apply the **hybrid fix policy**:
 
@@ -88,11 +111,12 @@ Review all SpecKit artifacts under `specs/` for quality, consistency, and alignm
    - Constitution violations
    - Ambiguous requirements that require human judgment to resolve
 
-4. After applying LOW/MEDIUM fixes, re-run all five reviewers to verify. Repeat this loop until all five return **APPROVE** (considering only remaining HIGH/CRITICAL findings as blocking) or the process has exceeded 3 iterations.
+4. After applying LOW/MEDIUM fixes, re-run all discovered reviewers to verify. Repeat this loop until all discovered reviewers return **APPROVE** (considering only remaining HIGH/CRITICAL findings as blocking) or the process has exceeded 3 iterations.
 
 5. If 3 iterations are exceeded, ask the user whether to continue or stop.
 
 6. Provide a final report to the user:
+   - **Discovery summary**: how many reviewer agents were discovered, which were invoked, and which known reviewer roles were absent (informational, non-blocking)
    - What was found in each iteration
    - What was auto-fixed (LOW/MEDIUM)
    - Outstanding HIGH/CRITICAL findings that require human decision, with full context and recommendations
@@ -104,6 +128,6 @@ Review all SpecKit artifacts under `specs/` for quality, consistency, and alignm
 
 ## Verdict
 
-The council returns **APPROVE** only when all five reviewers return **APPROVE**. Any single **REQUEST CHANGES** means the council verdict is **REQUEST CHANGES**.
+The council returns **APPROVE** only when all discovered reviewers return **APPROVE**. Any single **REQUEST CHANGES** from a discovered reviewer means the council verdict is **REQUEST CHANGES**. Absent reviewers (known roles whose agent files were not found during discovery) do not affect the verdict but are noted in the discovery summary.
 
-In Spec Review Mode, the council may return **APPROVE WITH ADVISORIES** when all LOW/MEDIUM findings have been auto-fixed but HIGH/CRITICAL findings remain that require human judgment. The advisories are the outstanding HIGH/CRITICAL findings.
+In Spec Review Mode, the council may return **APPROVE WITH ADVISORIES** when all LOW/MEDIUM findings have been auto-fixed but HIGH/CRITICAL findings remain that require human judgment. The advisories are the outstanding HIGH/CRITICAL findings. The discovery summary is included regardless of the verdict.
