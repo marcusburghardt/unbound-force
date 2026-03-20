@@ -3,13 +3,20 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/unbound-force/unbound-force/internal/sync"
 )
 
+var validRepoPattern = regexp.MustCompile(`^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$`)
+
 // CollectGitHub collects metrics from the GitHub API via the gh CLI.
 func CollectGitHub(runner sync.GHRunner, repo string, period time.Duration) (*SourceCollection, error) {
+	if !validRepoPattern.MatchString(repo) {
+		return nil, fmt.Errorf("invalid repository format %q: expected owner/repo", repo)
+	}
+
 	now := time.Now().UTC()
 	since := now.Add(-period)
 	sinceStr := since.Format("2006-01-02")

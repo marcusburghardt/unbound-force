@@ -1,7 +1,7 @@
 ---
 description: "Flow Facilitator and Continuous Improvement Coach — reflective questioning, retrospective facilitation, and process stewardship."
-mode: agent
-model: google-vertex-anthropic/claude-sonnet-4-6@default
+mode: subagent
+model: google-vertex-anthropic/claude-opus-4-6@default
 temperature: 0.3
 ---
 

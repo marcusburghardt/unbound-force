@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -99,13 +100,9 @@ func (q *Query) Bottlenecks() ([]BottleneckResult, error) {
 	}
 
 	// Sort by wait time descending
-	for i := 0; i < len(results)-1; i++ {
-		for j := i + 1; j < len(results); j++ {
-			if results[j].AvgWaitDays > results[i].AvgWaitDays {
-				results[i], results[j] = results[j], results[i]
-			}
-		}
-	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[j].AvgWaitDays < results[i].AvgWaitDays
+	})
 
 	return results, nil
 }

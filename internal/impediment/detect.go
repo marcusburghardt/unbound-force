@@ -31,7 +31,9 @@ func Detect(store *metrics.Store, repo *Repository, now time.Time) ([]Impediment
 			)
 			if err == nil {
 				imp.Source = "detected"
-				_ = repo.save(imp) // update source field
+				if saveErr := repo.save(imp); saveErr != nil {
+					return detected, fmt.Errorf("update impediment source: %w", saveErr)
+				}
 				detected = append(detected, *imp)
 			}
 		}
@@ -51,7 +53,9 @@ func Detect(store *metrics.Store, repo *Repository, now time.Time) ([]Impediment
 			)
 			if err == nil {
 				imp.Source = "detected"
-				_ = repo.save(imp)
+				if saveErr := repo.save(imp); saveErr != nil {
+					return detected, fmt.Errorf("update impediment source: %w", saveErr)
+				}
 				detected = append(detected, *imp)
 			}
 		}
@@ -71,7 +75,9 @@ func Detect(store *metrics.Store, repo *Repository, now time.Time) ([]Impediment
 			)
 			if err == nil {
 				imp.Source = "detected"
-				_ = repo.save(imp)
+				if saveErr := repo.save(imp); saveErr != nil {
+					return detected, fmt.Errorf("update impediment source: %w", saveErr)
+				}
 				detected = append(detected, *imp)
 			}
 		}

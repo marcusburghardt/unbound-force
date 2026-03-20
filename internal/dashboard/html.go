@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/unbound-force/unbound-force/internal/metrics"
@@ -103,7 +104,8 @@ func RenderHTML(snapshot metrics.MetricsSnapshot, indicators []metrics.HealthInd
 		Indicators: htmlInds,
 	}
 
-	f, err := os.Create(outPath)
+	outPath = filepath.Clean(outPath)
+	f, err := os.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("create HTML file: %w", err)
 	}

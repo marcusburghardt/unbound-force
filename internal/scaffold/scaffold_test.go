@@ -869,6 +869,7 @@ var knownNonEmbeddedFiles = map[string]bool{
 	".opencode/agents/reviewer-testing.md":    true,
 	".opencode/agents/muti-mind-po.md":        true,
 	// Commands — local-only tooling
+	".opencode/command/cobalt-crush.md":               true,
 	".opencode/command/gaze.md":                       true,
 	".opencode/command/gaze-fix.md":                   true,
 	".opencode/command/speckit.testreview.md":         true,

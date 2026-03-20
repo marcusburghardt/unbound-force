@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/unbound-force/unbound-force/internal/sync"
@@ -28,13 +29,13 @@ func ParsePeriod(s string) (time.Duration, error) {
 	last := s[len(s)-1]
 	switch last {
 	case 'd':
-		n, err := parseInt(s[:len(s)-1])
+		n, err := strconv.Atoi(s[:len(s)-1])
 		if err != nil {
 			return 0, fmt.Errorf("invalid period %q: %w", s, err)
 		}
 		return time.Duration(n) * 24 * time.Hour, nil
 	case 'w':
-		n, err := parseInt(s[:len(s)-1])
+		n, err := strconv.Atoi(s[:len(s)-1])
 		if err != nil {
 			return 0, fmt.Errorf("invalid period %q: %w", s, err)
 		}
@@ -46,20 +47,6 @@ func ParsePeriod(s string) (time.Duration, error) {
 		}
 		return d, nil
 	}
-}
-
-func parseInt(s string) (int, error) {
-	n := 0
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("non-numeric character %q", c)
-		}
-		n = n*10 + int(c-'0')
-	}
-	if len(s) == 0 {
-		return 0, fmt.Errorf("empty number")
-	}
-	return n, nil
 }
 
 // Collect gathers metrics from the specified sources.
