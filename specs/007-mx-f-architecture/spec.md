@@ -2,7 +2,7 @@
 spec_id: "007"
 title: "Mx F Architecture (Manager)"
 phase: 1
-status: draft
+status: complete
 depends_on:
   - "[[specs/001-org-constitution/spec]]"
   - "[[specs/002-hero-interface-contract/spec]]"
@@ -12,7 +12,7 @@ depends_on:
 
 **Feature Branch**: `007-mx-f-architecture`
 **Created**: 2026-02-24
-**Status**: Draft
+**Status**: Complete
 **Input**: User description: "Design the architecture for Mx F (Mx Found), the Manager hero. Mx F is the Flow Facilitator and Continuous Improvement Coach. It includes an AI coaching persona, a full metrics collection and dashboard platform, retrospective facilitation, obstacle tracking, and swarm coordination capabilities."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -137,13 +137,13 @@ Mx F coordinates the swarm's overall process: sprint ceremonies, cross-hero comm
 
 ### Functional Requirements
 
-- **FR-001**: Mx F MUST provide a metrics collection platform that ingests data from: GitHub API, Gaze quality reports, Divisor review verdicts, Muti-Mind backlog artifacts, and speckit artifacts.
-- **FR-002**: Mx F MUST provide a CLI tool (`mx-f`) with subcommands: `collect`, `metrics`, `impediment`, `dashboard`, `sprint`, `standup`, and `retro`.
-- **FR-003**: The metrics collection MUST store data locally in a structured format (JSON files or SQLite) in `.mx-f/data/`.
+- **FR-001**: Mx F MUST provide a metrics collection platform that ingests data from: GitHub API (via `gh` CLI and the existing `GHRunner` interface from `internal/sync`), Gaze quality reports, Divisor review verdicts, Muti-Mind backlog artifacts, and speckit artifacts. Authentication is handled by `gh auth login`.
+- **FR-002**: Mx F MUST provide a Go CLI backend (`cmd/mxf/`) with Cobra subcommands: `collect`, `metrics`, `impediment`, `dashboard`, `sprint`, `standup`, and `retro`. The CLI is built alongside the `unbound` binary using the same Go module and GoReleaser pipeline.
+- **FR-003**: The metrics collection MUST store data locally as JSON files in `.mx-f/data/`. One file per collection run or per metric type. No SQLite (binary builds with `CGO_ENABLED=0`). Directory structure: `.mx-f/data/{source}/{timestamp}.json`.
 - **FR-004**: Mx F MUST compute at minimum these metrics: velocity, cycle time, lead time, defect rate, review iteration count, CI pass rate, backlog health, and flow efficiency.
 - **FR-005**: All metrics queries MUST support `--format json` and `--format text` output (per Org Constitution Principle III).
 - **FR-006**: Mx F MUST produce a `metrics-snapshot` artifact type conforming to the inter-hero artifact envelope (Spec 002).
-- **FR-007**: Mx F MUST provide an AI coaching persona deployed as an OpenCode agent (`mx-f-coach.md`) installable via `mx-f init`.
+- **FR-007**: Mx F MUST provide an AI coaching persona deployed as an OpenCode agent (`mx-f-coach.md`) via `unbound init`. The coaching agent is a Markdown file (same pattern as `cobalt-crush-dev.md` and `divisor-*.md`).
 - **FR-008**: The coaching persona MUST use reflective questioning techniques (5 Whys, mirroring, probing) instead of prescribing solutions.
 - **FR-009**: Mx F MUST facilitate structured retrospectives with: data presentation, pattern identification, root cause analysis, improvement proposals, and action items.
 - **FR-010**: Retrospective action items MUST be tracked and reviewed at the start of the next retrospective.
@@ -154,7 +154,7 @@ Mx F coordinates the swarm's overall process: sprint ceremonies, cross-hero comm
 - **FR-015**: Mx F MUST support sprint lifecycle management: planning (with capacity calculation), daily standup reporting, sprint review summaries.
 - **FR-016**: Mx F MUST identify process patterns from cross-hero data (e.g., frequent Divisor findings -> convention pack improvement recommendation).
 - **FR-017**: Mx F MUST produce a `coaching-record` artifact type for retrospective outcomes and process improvement records.
-- **FR-018**: Mx F MUST conform to the Hero Interface Contract (Spec 002): standard repo structure, hero manifest, speckit integration, OpenCode agent/command standards.
+- **FR-018**: Mx F MUST conform to the Hero Interface Contract (Spec 002) as a hybrid hero: Go CLI backend at `cmd/mxf/` (like Muti-Mind at `cmd/mutimind/`) plus OpenCode agent (`mx-f-coach.md`) deployed via `unbound init`. Business logic lives under `internal/` packages. No standalone repo required.
 - **FR-019**: Mx F MUST consume artifacts from all other heroes: `quality-report` (Gaze), `review-verdict` (Divisor), `backlog-item` and `acceptance-decision` (Muti-Mind).
 - **FR-020**: Mx F MUST support graceful degradation: if a data source is unavailable, it collects from available sources and reports what is missing.
 - **FR-021**: Mx F MUST NOT prescribe technical solutions. When asked technical questions, it MUST redirect to the appropriate hero (Cobalt-Crush for coding, Gaze for testing, Divisor for architecture).
@@ -183,6 +183,16 @@ Mx F coordinates the swarm's overall process: sprint ceremonies, cross-hero comm
 - **SC-008**: Proactive impediment detection identifies a CI failure rate spike from simulated metrics data.
 - **SC-009**: All CLI output supports `--format json` and the JSON validates against the `metrics-snapshot` artifact type schema.
 - **SC-010**: Mx F functions with only GitHub as a data source when other heroes are not deployed (standalone capability per Principle II).
+
+## Clarifications
+
+### Session 2026-03-20
+
+- Q: Should Mx F follow the Muti-Mind pattern (Go CLI backend + OpenCode agent) or be simplified to agent-only? → A: Go CLI backend (`cmd/mxf/`) + OpenCode agent (`mx-f-coach.md`). CLI handles data operations (collection, storage, computation, charts); agent provides the coaching persona. Same pattern as Muti-Mind (Spec 004).
+- Q: What storage format should Mx F use for collected metrics? → A: JSON files in `.mx-f/data/`. One file per collection run or per metric type. No SQLite (CGO_ENABLED=0 constraint), no external dependencies. Consistent with how Muti-Mind stores backlog data.
+- Q: What scope should v0.4.0 target? → A: Full scope — all 6 user stories. US1 (metrics collection), US2 (CLI querying), US3 (coaching agent), US4 (impediment tracking), US5 (dashboard/visualization), US6 (swarm coordination).
+- Q: Should Mx F authenticate via `gh` CLI or use a GitHub token directly? → A: Use the `gh` CLI via the existing `GHRunner` interface from `internal/sync`. Auth handled by `gh auth login`. Reuses proven pattern, zero new auth code.
+- Q: How should the internal packages be structured? → A: Domain-oriented packages: `internal/metrics/` (collection + computation), `internal/impediment/` (tracking), `internal/coaching/` (retro facilitation), `internal/dashboard/` (chart rendering), `internal/sprint/` (lifecycle management). Mirrors the user story structure and is consistent with existing `internal/backlog`, `internal/sync`, `internal/artifacts` pattern.
 
 ## Dependencies
 

@@ -121,7 +121,7 @@ internal/scaffold/assets/
 │   │   └── reviewer-sre.md          # EXISTING: kept for migration
 │   ├── command/
 │   │   └── review-council.md        # NEW: embedded (was non-embedded)
-│   └── divisor/
+│   └── unbound/
 │       └── packs/
 │           ├── go.md                # NEW: Go convention pack (tool-owned)
 │           ├── go-custom.md         # NEW: Go custom rules stub (user-owned)
@@ -152,7 +152,7 @@ cmd/unbound/
 │   └── divisor-testing.md           # NEW canonical source
 ├── command/
 │   └── review-council.md            # MODIFIED: scan divisor-*.md
-└── divisor/
+└── unbound/
     └── packs/
         ├── go.md                    # NEW canonical source (tool-owned)
         ├── go-custom.md             # NEW canonical source (user-owned)

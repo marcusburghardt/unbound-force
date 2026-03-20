@@ -41,7 +41,7 @@ Hero constitutions extend (never contradict) the org constitution. See the const
 | Cobalt-Crush | Developer | Embedded in `unbound` binary | Implemented (Spec 006) |
 | Gaze | Tester | `unbound-force/gaze` | Implemented |
 | The Divisor | PR Reviewer (Council) | Embedded in `unbound` binary | Implemented (Spec 005) |
-| Mx F | Manager | `unbound-force/mx-f` | Spec only (007) |
+| Mx F | Manager | `cmd/mxf/` + OpenCode agent | Implemented (Spec 007) |
 
 Gaze is the only hero with a functional implementation. The Divisor has a prototype deployment (reviewer agents) inside the Gaze repo.
 
@@ -70,6 +70,7 @@ unbound-force/
 │   ├── agents/
 │   │   ├── cobalt-crush-dev.md       # Developer persona (Cobalt-Crush)
 │   │   ├── constitution-check.md    # Alignment checking agent (subagent)
+│   │   ├── mx-f-coach.md            # Coaching persona (Mx F)
 │   │   ├── divisor-adversary.md     # The Adversary: resilience/security (Divisor)
 │   │   ├── divisor-architect.md     # The Architect: structural review (Divisor)
 │   │   ├── divisor-guard.md         # The Guard: intent drift detection (Divisor)
@@ -472,9 +473,12 @@ This repo is primarily specifications and governance documents. Follow these con
 - Filesystem only (embedded assets deployed to target directory) (005-the-divisor-architecture)
 - Markdown (agent file), Go 1.24+ (scaffold engine refactor) + `embed.FS` (asset embedding), existing scaffold engine (006-cobalt-crush-architecture)
 - Filesystem only (Markdown files deployed to target directory) (006-cobalt-crush-architecture)
+- Go 1.24+ (CLI backend), Markdown (coaching agent) + `github.com/spf13/cobra` (CLI), `github.com/charmbracelet/log` (logging), `github.com/charmbracelet/lipgloss` (terminal styling), `embed.FS` (agent embedding) (007-mx-f-architecture)
+- JSON files in `.mx-f/data/{source}/{timestamp}.json` for metrics, Markdown+YAML frontmatter in `.mx-f/impediments/` for impediments, `.mx-f/retros/` for retrospective records (007-mx-f-architecture)
 
 ## Recent Changes
 
+- 007-mx-f-architecture: Implemented Mx F Manager hero -- Go CLI backend (`cmd/mxf/`) with 7 subcommands (collect, metrics, impediment, dashboard, sprint, standup, retro), 5 domain packages (`internal/metrics/`, `internal/impediment/`, `internal/coaching/`, `internal/dashboard/`, `internal/sprint/`), OpenCode coaching agent (`mx-f-coach.md`), artifact package generalization (WriteArtifact, ReadEnvelope, FindArtifacts), GoReleaser multi-binary configuration, 47 total embedded files (was 46). All 6 user stories and 68 tasks completed.
 - 006-cobalt-crush-architecture: Implemented Cobalt-Crush Developer persona -- single `cobalt-crush-dev.md` agent file with engineering philosophy (clean code, SOLID, TDD, spec-driven development), convention pack adherence via shared `.opencode/unbound/packs/`, Gaze feedback loop (quality report consumption), Divisor review preparation (finding resolution, learned patterns), speckit integration (task processing, phase checkpoints), graphthulhu MCP integration (optional). Prerequisite refactor relocated convention packs from `.opencode/divisor/packs/` to `.opencode/unbound/packs/` (shared neutral location), updating scaffold engine, tests, Divisor agents, and documentation. 46 total embedded files (was 45).
 - 005-the-divisor-architecture: Implemented The Divisor PR Reviewer Council -- 5 canonical `divisor-*.md` persona agents (Guard, Architect, Adversary, SRE, Testing) with dynamic discovery, 6 convention pack files (Go, TypeScript, default + custom stubs) loaded at review time, `/review-council` command updated to `divisor-*` pattern, `unbound init --divisor` subset deployment with `--lang` language override, scaffold engine extended with `isDivisorAsset()`, `detectLang()`, `shouldDeployPack()`, convention pack ownership model (tool-owned canonical, user-owned custom), 45 total embedded files (was 33), all 5 user stories and 44 tasks completed.
 - graphthulhu-homebrew-distribution: `brew install unbound-force/tap/unbound` now installs graphthulhu automatically as a cask dependency. Added `Casks/graphthulhu.rb` to `unbound-force/homebrew-tap` (v0.4.0, all four platform checksums), added `dependencies: [{cask: graphthulhu}]` and macOS quarantine-removal hook to `.goreleaser.yaml`, opened upstream PR to `skridlevsky/graphthulhu` (#5) for eventual tap ownership transfer.
