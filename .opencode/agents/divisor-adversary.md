@@ -1,7 +1,7 @@
 ---
 description: Skeptical auditor that finds where code and specs will break under stress or violate behavioral constraints.
 mode: subagent
-model: google-vertex-anthropic/claude-sonnet-4-6@default
+model: google-vertex-anthropic/claude-opus-4-6@default
 temperature: 0.1
 tools:
   read: true

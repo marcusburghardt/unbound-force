@@ -6,6 +6,11 @@ status: draft
 depends_on:
   - "[[specs/001-org-constitution/spec]]"
   - "[[specs/002-hero-interface-contract/spec]]"
+  - "[[specs/003-specification-framework/spec]]"
+  - "[[specs/004-muti-mind-architecture/spec]]"
+  - "[[specs/005-the-divisor-architecture/spec]]"
+  - "[[specs/006-cobalt-crush-architecture/spec]]"
+  - "[[specs/007-mx-f-architecture/spec]]"
 ---
 
 # Feature Specification: Shared Data Model

@@ -1,7 +1,7 @@
 ---
 description: "Deployment and operational readiness auditor ensuring code and specs are production-viable, maintainable, and observable in runtime."
 mode: subagent
-model: google-vertex-anthropic/claude-sonnet-4-6@default
+model: google-vertex-anthropic/claude-opus-4-6@default
 temperature: 0.1
 tools:
   write: false

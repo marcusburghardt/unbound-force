@@ -1,8 +1,26 @@
 version: 2
 
 builds:
-  - main: ./cmd/unbound
+  - id: unbound
+    main: ./cmd/unbound
     binary: unbound
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Tag}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.CommitDate}}
+  - id: mxf
+    main: ./cmd/mxf
+    binary: mxf
     env:
       - CGO_ENABLED=0
     goos:

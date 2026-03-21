@@ -53,7 +53,7 @@ regardless of auto-detection.
 │   └── divisor-testing.md       # Test quality
 ├── command/
 │   └── review-council.md        # Orchestration command
-└── divisor/
+└── unbound/
     └── packs/
         ├── go.md                # Go convention pack
         ├── go-custom.md         # Project-specific extensions

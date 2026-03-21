@@ -1,7 +1,7 @@
 ---
 description: "Structural and architectural reviewer ensuring code and specs align with project conventions and long-term maintainability."
 mode: subagent
-model: google-vertex-anthropic/claude-sonnet-4-6@default
+model: google-vertex-anthropic/claude-opus-4-6@default
 temperature: 0.1
 tools:
   write: false

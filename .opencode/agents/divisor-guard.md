@@ -1,7 +1,7 @@
 ---
 description: Intent drift detector ensuring changes solve the actual business need.
 mode: subagent
-model: google-vertex-anthropic/claude-sonnet-4-6@default
+model: google-vertex-anthropic/claude-opus-4-6@default
 temperature: 0.1
 tools:
   write: false

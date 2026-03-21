@@ -1,3 +1,13 @@
+---
+spec_id: "010"
+title: "Knowledge Graph Integration"
+phase: 3
+status: complete
+depends_on:
+  - "[[specs/001-org-constitution/spec]]"
+  - "[[specs/002-hero-interface-contract/spec]]"
+---
+
 # Feature Specification: Knowledge Graph Integration
 
 **Feature Branch**: `010-knowledge-graph-integration`

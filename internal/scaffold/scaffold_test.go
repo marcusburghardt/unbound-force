@@ -110,9 +110,10 @@ var expectedAssetPaths = []string{
 	"opencode/command/speckit.specify.md",
 	"opencode/command/speckit.tasks.md",
 	"opencode/command/speckit.taskstoissues.md",
-	// OpenCode agents — legacy reviewers (4) + Divisor personas (5) + Cobalt-Crush (1) + constitution-check (1)
+	// OpenCode agents — legacy reviewers (4) + Divisor personas (5) + Cobalt-Crush (1) + Mx F coach (1) + constitution-check (1)
 	"opencode/agents/cobalt-crush-dev.md",
 	"opencode/agents/constitution-check.md",
+	"opencode/agents/mx-f-coach.md", // Spec 007: Mx F coaching persona (user-owned, not in --divisor subset, not tool-owned)
 	"opencode/agents/divisor-adversary.md",
 	"opencode/agents/divisor-architect.md",
 	"opencode/agents/divisor-guard.md",
@@ -868,6 +869,7 @@ var knownNonEmbeddedFiles = map[string]bool{
 	".opencode/agents/reviewer-testing.md":    true,
 	".opencode/agents/muti-mind-po.md":        true,
 	// Commands — local-only tooling
+	".opencode/command/cobalt-crush.md":               true,
 	".opencode/command/gaze.md":                       true,
 	".opencode/command/gaze-fix.md":                   true,
 	".opencode/command/speckit.testreview.md":         true,
