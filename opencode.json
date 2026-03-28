@@ -7,7 +7,8 @@
         "dewey",
         "serve",
         "--vault",
-        "."
+        ".",
+        "--include-hidden"
       ],
       "enabled": true
     }

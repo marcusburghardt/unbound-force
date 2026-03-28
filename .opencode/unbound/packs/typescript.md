@@ -3,6 +3,7 @@ pack_id: typescript
 language: TypeScript
 version: 1.0.0
 ---
+<!-- scaffolded by uf vdev -->
 
 # Convention Pack: TypeScript
 
