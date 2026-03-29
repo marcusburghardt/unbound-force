@@ -16,10 +16,64 @@ Review the current codebase **or** SpecKit artifacts for compliance with the Beh
 
 ## Determine Review Mode
 
-Inspect `$ARGUMENTS` to select the review mode:
+The review mode is determined automatically by examining the
+workspace state. The user can also force a mode explicitly.
 
-- If arguments contain the word **"specs"**: use **Spec Review Mode**
-- Otherwise: use **Code Review Mode** (default)
+### Explicit Override
+
+If `$ARGUMENTS` contains the word **"specs"**, use
+**Spec Review Mode** regardless of auto-detection.
+
+If `$ARGUMENTS` contains the word **"code"**, use
+**Code Review Mode** regardless of auto-detection.
+
+### Auto-Detection (when no explicit override)
+
+When no mode keyword is provided, detect the mode by
+examining the current branch and workspace:
+
+1. **Get the current branch name**:
+   ```bash
+   git rev-parse --abbrev-ref HEAD
+   ```
+
+2. **Get the diff against the base branch** (`main`):
+   ```bash
+   git diff --name-only main...HEAD
+   ```
+   This shows all files changed on the current branch
+   relative to `main`.
+
+3. **Classify the changed files**:
+   - **Spec files**: paths under `specs/`, `openspec/`,
+     `.specify/`, or files named `spec.md`, `plan.md`,
+     `tasks.md`, `checklists/`, `contracts/`,
+     `data-model.md`, `research.md`
+   - **Code files**: everything else (`.go`, `.ts`, `.js`,
+     `.py`, `go.mod`, `go.sum`, `Makefile`, `internal/`,
+     `cmd/`, `.opencode/agents/`, `.opencode/command/`,
+     `.opencode/skill/`, `.opencode/unbound/packs/`,
+     etc.)
+
+4. **Select mode based on classification**:
+
+   | Condition | Mode | Rationale |
+   |-----------|------|-----------|
+   | Code files changed | **Code Review** | Post-implementation -- review the code |
+   | Only spec files changed | **Spec Review** | Pre-implementation -- review the specs |
+   | No files changed vs main | **Spec Review** | On main or fresh branch -- review specs |
+   | On `main` branch | **Spec Review** | No feature branch -- review specs |
+
+5. **Announce the detected mode**: Always tell the user
+   which mode was selected and why:
+   > "Detected **Code Review Mode** — found N code files
+   > changed on branch `012-swarm-delegation` vs `main`."
+   >
+   > Or: "Detected **Spec Review Mode** — only spec
+   > artifacts changed on branch `013-binary-rename`."
+   >
+   > Use `/review-council code` or `/review-council specs`
+   > to override.
 
 ---
 
