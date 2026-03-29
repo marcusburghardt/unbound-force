@@ -55,7 +55,12 @@ examining the current branch and workspace:
      `.opencode/skill/`, `.opencode/unbound/packs/`,
      etc.)
 
-4. **Select mode based on classification**:
+4. **Detect the workflow tier** from the branch name:
+   - Branch matches `opsx/*`: **OpenSpec** (tactical)
+   - Branch matches `NNN-*` (digits then dash): **Speckit** (strategic)
+   - Branch is `main` or other: no active workflow
+
+5. **Select mode based on classification**:
 
    | Condition | Mode | Rationale |
    |-----------|------|-----------|
@@ -64,13 +69,16 @@ examining the current branch and workspace:
    | No files changed vs main | **Spec Review** | On main or fresh branch -- review specs |
    | On `main` branch | **Spec Review** | No feature branch -- review specs |
 
-5. **Announce the detected mode**: Always tell the user
-   which mode was selected and why:
-   > "Detected **Code Review Mode** — found N code files
-   > changed on branch `012-swarm-delegation` vs `main`."
+6. **Announce the detected mode**: Always tell the user
+   which mode was selected and why, including the
+   workflow tier:
+   > "Detected **Code Review Mode** (Speckit) — found N
+   > code files changed on branch `012-swarm-delegation`
+   > vs `main`."
    >
-   > Or: "Detected **Spec Review Mode** — only spec
-   > artifacts changed on branch `013-binary-rename`."
+   > Or: "Detected **Spec Review Mode** (OpenSpec) — only
+   > spec artifacts changed on branch
+   > `opsx/documentation-accuracy`."
    >
    > Use `/review-council code` or `/review-council specs`
    > to override.
@@ -136,13 +144,35 @@ Review the current codebase for compliance with the Behavioral Constraints in `A
 
 ## Spec Review Mode
 
-Review all SpecKit artifacts under `specs/` for quality, consistency, and alignment with the project constitution.
+Review spec artifacts for quality, consistency, and
+alignment with the project constitution. The review scope
+depends on the detected workflow tier.
+
+### Determine Review Scope
+
+Based on the workflow tier detected in the auto-detection
+step, determine which artifacts to review:
+
+- **Speckit** (branch `NNN-*`): Review the active spec
+  directory at `specs/NNN-<name>/` (spec.md, plan.md,
+  tasks.md, contracts/, data-model.md, checklists/),
+  plus `.specify/memory/constitution.md` and `AGENTS.md`.
+
+- **OpenSpec** (branch `opsx/*`): Review the active
+  change directory at `openspec/changes/<name>/`
+  (proposal.md, design.md, specs/, tasks.md), plus any
+  referenced main specs at `openspec/specs/`, plus
+  `.specify/memory/constitution.md` and `AGENTS.md`.
+
+- **No active workflow** (main or unknown branch): Review
+  all spec artifacts across both `specs/` and
+  `openspec/specs/`, plus the constitution.
 
 ### Instructions
 
-1. Delegate the review to all **discovered** reviewer agents in parallel using the Task tool. For each discovered agent, use the focus area from the Known Reviewer Roles reference table (selecting the Spec Review Focus column) to provide targeted context. For any discovered agent not in the table, use a generic prompt: "Review all SpecKit artifacts under `specs/` for quality, consistency, and alignment. Return your verdict (APPROVE or REQUEST CHANGES) along with all findings."
+1. Delegate the review to all **discovered** reviewer agents in parallel using the Task tool. For each discovered agent, use the focus area from the Known Reviewer Roles reference table (selecting the Spec Review Focus column) to provide targeted context. For any discovered agent not in the table, use a generic prompt: "Review the spec artifacts in scope for quality, consistency, and alignment. Return your verdict (APPROVE or REQUEST CHANGES) along with all findings."
 
-   For each agent, instruct it to **operate in Spec Review Mode**: review all SpecKit artifacts under `specs/` (not code), plus `.specify/memory/constitution.md` and `AGENTS.md`. Instruct the agent to return its verdict (**APPROVE** or **REQUEST CHANGES**) along with all findings.
+   For each agent, instruct it to **operate in Spec Review Mode**: review the spec artifacts identified in the review scope above (not code), plus `.specify/memory/constitution.md` and `AGENTS.md`. Include the workflow tier (Speckit/OpenSpec) in the agent prompt so it can tailor its review accordingly. Instruct the agent to return its verdict (**APPROVE** or **REQUEST CHANGES**) along with all findings.
 
 2. Collect all **REQUEST CHANGES** findings from the discovered reviewers. If all discovered reviewers return **APPROVE**, report the result and stop.
 
