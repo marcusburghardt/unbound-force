@@ -134,4 +134,20 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
 
+10. **Commit and push gate**:
+   - **CRITICAL**: When all tasks are complete, all changes MUST
+     be committed and pushed on the current feature branch
+     BEFORE suggesting any next steps (PR creation, merging,
+     or branch switching).
+   - Run `git status --short` to check for uncommitted changes.
+   - If uncommitted changes exist, prompt the user to commit
+     and push before proceeding.
+   - Do NOT suggest switching to `main` or any other branch
+     until the working tree is clean and changes are pushed.
+   - The recommended completion flow is:
+     1. Commit all changes on the feature branch
+     2. Push to remote
+     3. Create PR (if desired)
+     4. Then merge and switch branches
+
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
