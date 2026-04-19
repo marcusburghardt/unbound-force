@@ -57,3 +57,4 @@ branches:
       enforce_admins: false
       required_linear_history: false
       restrictions: null
+# Managed by unbound-force/.github org defaults
