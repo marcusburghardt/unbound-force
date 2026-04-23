@@ -853,11 +853,20 @@ func ensureCLAUDEmd(opts *Options, lang string) subToolResult {
 	packs := collectDeployedPacks(lang)
 	var block strings.Builder
 	block.WriteString(claudemdMarker + "\n\n")
-	block.WriteString("@AGENTS.md\n\n")
+	block.WriteString("@AGENTS.md\n")
+	block.WriteString("@.opencode/agents/cobalt-crush-dev.md\n\n")
 	block.WriteString("## Convention Packs\n\n")
 	for _, p := range packs {
 		block.WriteString("@.opencode/uf/packs/" + p + "\n")
 	}
+	block.WriteString("\n## Review Agents (read on-demand)\n\n")
+	block.WriteString("When performing code review, read the applicable\n")
+	block.WriteString("Divisor agent from .opencode/agents/:\n")
+	block.WriteString("- divisor-guard.md — intent drift, constitution\n")
+	block.WriteString("- divisor-architect.md — structure, patterns, DRY\n")
+	block.WriteString("- divisor-adversary.md — security, error handling\n")
+	block.WriteString("- divisor-testing.md — test quality, assertions\n")
+	block.WriteString("- divisor-sre.md — operations, performance\n")
 
 	var content string
 	if readErr == nil {
@@ -928,6 +937,15 @@ func ensureCursorrules(opts *Options, lang string) subToolResult {
 	for _, p := range packs {
 		block.WriteString("- .opencode/uf/packs/" + p + "\n")
 	}
+	block.WriteString("\nFor engineering philosophy and coding principles, read\n")
+	block.WriteString(".opencode/agents/cobalt-crush-dev.md.\n\n")
+	block.WriteString("When reviewing code, consult the applicable reviewer\n")
+	block.WriteString("checklist from .opencode/agents/:\n")
+	block.WriteString("- divisor-guard.md — intent drift, constitution\n")
+	block.WriteString("- divisor-architect.md — structure, patterns, DRY\n")
+	block.WriteString("- divisor-adversary.md — security, error handling\n")
+	block.WriteString("- divisor-testing.md — test quality, assertions\n")
+	block.WriteString("- divisor-sre.md — operations, performance\n")
 
 	var content string
 	if readErr == nil {

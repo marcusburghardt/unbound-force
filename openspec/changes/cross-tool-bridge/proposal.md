@@ -43,12 +43,23 @@ pack using Claude Code's `@path` import syntax.
 # Unbound Force — managed by uf init
 
 @AGENTS.md
+@.opencode/agents/cobalt-crush-dev.md
 
 ## Convention Packs
 
 @.opencode/uf/packs/default.md
 @.opencode/uf/packs/severity.md
 @.opencode/uf/packs/go.md
+
+## Review Agents (read on-demand)
+
+When performing code review, read the applicable
+Divisor agent from .opencode/agents/:
+- divisor-guard.md — intent drift, constitution
+- divisor-architect.md — structure, patterns, DRY
+- divisor-adversary.md — security, error handling
+- divisor-testing.md — test quality, assertions
+- divisor-sre.md — operations, performance
 ```
 
 The pack list is generated dynamically -- `uf init`
@@ -82,11 +93,64 @@ Available packs:
 - .opencode/uf/packs/default.md (language-agnostic)
 - .opencode/uf/packs/severity.md (severity definitions)
 - .opencode/uf/packs/go.md (Go-specific)
+
+For engineering philosophy and coding principles, read
+.opencode/agents/cobalt-crush-dev.md.
+
+When reviewing code, consult the applicable reviewer
+checklist from .opencode/agents/:
+- divisor-guard.md — intent drift, constitution
+- divisor-architect.md — structure, patterns, DRY
+- divisor-adversary.md — security, error handling
+- divisor-testing.md — test quality, assertions
+- divisor-sre.md — operations, performance
 ```
 
 Detection: same marker pattern. Idempotent.
 
-### 4. Convention packs stay at .opencode/uf/packs/
+### 4. Agent file references in bridge files
+
+Agent files under `.opencode/agents/` have two parts:
+OpenCode-specific YAML frontmatter (model, temperature,
+tool restrictions) and a universal Markdown body (role
+descriptions, review checklists, engineering philosophy).
+The frontmatter is not portable but the body content is
+valuable to any LLM.
+
+The bridge files include selective agent references:
+
+- **cobalt-crush-dev.md** is auto-loaded in CLAUDE.md
+  via `@import` (engineering philosophy applies to all
+  coding work). Listed as a reference in .cursorrules.
+- **Divisor review agents** (divisor-guard, divisor-
+  architect, divisor-adversary, divisor-testing,
+  divisor-sre) are listed as on-demand references in
+  both bridge files. The LLM reads them when performing
+  code review, not on every session start.
+
+OpenCode-specific frontmatter in agent files is harmless
+metadata that non-OpenCode tools ignore. No format
+conversion is needed.
+
+### 5. Command files excluded from bridging
+
+Command files under `.opencode/command/` are OpenCode
+execution instructions that use tool-specific features:
+`$ARGUMENTS` variable interpolation, `Task tool` for
+subagent spawning, `agent:` frontmatter delegation,
+and cross-command references (`/speckit.plan`,
+`/review-council`, etc.). They cannot be bridged via
+pointer files -- they would need full format conversion
+to each tool's native command system.
+
+The workflow concepts they encode (Speckit pipeline,
+review council methodology, OpenSpec lifecycle) are
+already documented in AGENTS.md and the Specification
+Framework section. Non-OpenCode users follow those
+workflows manually or via their tool's native
+equivalent.
+
+### 6. Convention packs stay at .opencode/uf/packs/
 
 No file move. Packs remain at their current canonical
 location. The bridge files point to them. This avoids
@@ -149,11 +213,12 @@ an import mechanism.
 ### New Capabilities
 
 - `ensureCLAUDEmd()`: Creates or appends managed block
-  to CLAUDE.md with @imports for AGENTS.md and deployed
-  convention packs. Idempotent via marker detection.
+  to CLAUDE.md with @imports for AGENTS.md, cobalt-crush
+  agent, deployed convention packs, and on-demand review
+  agent references. Idempotent via marker detection.
 - `ensureCursorrules()`: Creates or appends managed block
-  to .cursorrules with pack reference instructions.
-  Idempotent via marker detection.
+  to .cursorrules with pack reference instructions and
+  agent file references. Idempotent via marker detection.
 - `ensureAGENTSmdPackSection()`: Appends Convention Packs
   section to AGENTS.md listing deployed packs.
   Idempotent via heading detection.

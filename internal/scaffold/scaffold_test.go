@@ -4045,11 +4045,17 @@ func TestEnsureCLAUDEmd_FreshDir(t *testing.T) {
 	if !strings.Contains(text, "@AGENTS.md") {
 		t.Error("expected @AGENTS.md import")
 	}
+	if !strings.Contains(text, "@.opencode/agents/cobalt-crush-dev.md") {
+		t.Error("expected cobalt-crush @import")
+	}
 	if !strings.Contains(text, "@.opencode/uf/packs/go.md") {
 		t.Error("expected Go pack @import")
 	}
 	if !strings.Contains(text, "@.opencode/uf/packs/default.md") {
 		t.Error("expected default pack @import")
+	}
+	if !strings.Contains(text, "divisor-guard.md") {
+		t.Error("expected Divisor review agent reference")
 	}
 }
 
@@ -4174,6 +4180,12 @@ func TestEnsureCursorrules_FreshDir(t *testing.T) {
 	}
 	if !strings.Contains(text, ".opencode/uf/packs/go.md") {
 		t.Error("expected Go pack reference")
+	}
+	if !strings.Contains(text, "cobalt-crush-dev.md") {
+		t.Error("expected cobalt-crush agent reference")
+	}
+	if !strings.Contains(text, "divisor-guard.md") {
+		t.Error("expected Divisor review agent reference")
 	}
 }
 
