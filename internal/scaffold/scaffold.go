@@ -217,8 +217,14 @@ func Run(opts Options) (*Result, error) {
 	// so that .gitignore is ready before sub-tools create runtime files.
 	giResult := ensureGitignore(&opts)
 
+	// Ensure cross-tool bridge files exist so Claude Code and Cursor
+	// users discover convention packs out of the box.
+	agentsResult := ensureAGENTSmdPackSection(&opts, lang)
+	claudeResult := ensureCLAUDEmd(&opts, lang)
+	cursorResult := ensureCursorrules(&opts, lang)
+
 	// Initialize sub-tools after file scaffolding, before summary.
-	subResults := append([]subToolResult{giResult}, initSubTools(&opts)...)
+	subResults := append([]subToolResult{giResult, agentsResult, claudeResult, cursorResult}, initSubTools(&opts)...)
 
 	printSummary(opts.Stdout, opts.DivisorOnly, langExplicit, langDetected, result, subResults)
 	return result, nil
@@ -751,6 +757,243 @@ func ensureGitignore(opts *Options) subToolResult {
 		name:   ".gitignore",
 		action: "configured",
 	}
+}
+
+// agentsmdPackMarker is the heading used to detect whether the
+// Convention Packs section has already been appended to AGENTS.md.
+const agentsmdPackMarker = "## Convention Packs"
+
+// ensureAGENTSmdPackSection appends a "Convention Packs" section to
+// AGENTS.md listing the deployed convention packs. Idempotent: if the
+// heading already exists, the file is not modified. Skips if AGENTS.md
+// does not exist (nothing to append to).
+// Uses opts.ReadFile/WriteFile for testability (dependency injection).
+func ensureAGENTSmdPackSection(opts *Options, lang string) subToolResult {
+	agentsPath := filepath.Join(opts.TargetDir, "AGENTS.md")
+
+	existing, readErr := opts.ReadFile(agentsPath)
+	if readErr != nil {
+		if os.IsNotExist(readErr) {
+			return subToolResult{
+				name:   "AGENTS.md pack section",
+				action: "skipped (no AGENTS.md)",
+			}
+		}
+		return subToolResult{
+			name:   "AGENTS.md pack section",
+			action: "failed",
+			detail: fmt.Sprintf("read failed: %v", readErr),
+		}
+	}
+
+	if strings.Contains(string(existing), agentsmdPackMarker) {
+		return subToolResult{
+			name:   "AGENTS.md pack section",
+			action: "already configured",
+		}
+	}
+
+	packs := collectDeployedPacks(lang)
+	var section strings.Builder
+	section.WriteString("\n" + agentsmdPackMarker + "\n\n")
+	section.WriteString("This repository uses convention packs scaffolded by\n")
+	section.WriteString("unbound-force. Agents MUST read the applicable pack(s)\n")
+	section.WriteString("before writing or reviewing code.\n\n")
+	for _, p := range packs {
+		section.WriteString("- `.opencode/uf/packs/" + p + "`\n")
+	}
+
+	content := string(existing)
+	if !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	content += section.String()
+
+	if writeErr := opts.WriteFile(agentsPath, []byte(content), 0o644); writeErr != nil {
+		return subToolResult{
+			name:   "AGENTS.md pack section",
+			action: "failed",
+			detail: fmt.Sprintf("write failed: %v", writeErr),
+		}
+	}
+
+	return subToolResult{
+		name:   "AGENTS.md pack section",
+		action: "configured",
+	}
+}
+
+// claudemdMarker is the sentinel string used to detect the managed
+// block in CLAUDE.md. Same marker pattern as gitignoreMarker.
+const claudemdMarker = "# Unbound Force — managed by uf init"
+
+// ensureCLAUDEmd creates or appends a managed block to CLAUDE.md with
+// @imports for AGENTS.md and deployed convention packs. Idempotent: if
+// the marker already exists, the file is not modified.
+// Uses opts.ReadFile/WriteFile for testability (dependency injection).
+func ensureCLAUDEmd(opts *Options, lang string) subToolResult {
+	claudePath := filepath.Join(opts.TargetDir, "CLAUDE.md")
+
+	existing, readErr := opts.ReadFile(claudePath)
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return subToolResult{
+			name:   "CLAUDE.md",
+			action: "failed",
+			detail: fmt.Sprintf("read failed: %v", readErr),
+		}
+	}
+
+	if readErr == nil && strings.Contains(string(existing), claudemdMarker) {
+		return subToolResult{
+			name:   "CLAUDE.md",
+			action: "already configured",
+		}
+	}
+
+	packs := collectDeployedPacks(lang)
+	var block strings.Builder
+	block.WriteString(claudemdMarker + "\n\n")
+	block.WriteString("@AGENTS.md\n")
+	block.WriteString("@.opencode/agents/cobalt-crush-dev.md\n\n")
+	block.WriteString("## Convention Packs\n\n")
+	for _, p := range packs {
+		block.WriteString("@.opencode/uf/packs/" + p + "\n")
+	}
+	block.WriteString("\n## Review Agents (read on-demand)\n\n")
+	block.WriteString("When performing code review, read the applicable\n")
+	block.WriteString("Divisor agent from .opencode/agents/:\n")
+	block.WriteString("- divisor-guard.md — intent drift, constitution\n")
+	block.WriteString("- divisor-architect.md — structure, patterns, DRY\n")
+	block.WriteString("- divisor-adversary.md — security, error handling\n")
+	block.WriteString("- divisor-testing.md — test quality, assertions\n")
+	block.WriteString("- divisor-sre.md — operations, performance\n")
+
+	var content string
+	if readErr == nil {
+		content = string(existing)
+		if len(content) > 0 && !strings.HasSuffix(content, "\n\n") {
+			if !strings.HasSuffix(content, "\n") {
+				content += "\n"
+			}
+			content += "\n"
+		}
+	}
+	content += block.String()
+
+	if writeErr := opts.WriteFile(claudePath, []byte(content), 0o644); writeErr != nil {
+		return subToolResult{
+			name:   "CLAUDE.md",
+			action: "failed",
+			detail: fmt.Sprintf("write failed: %v", writeErr),
+		}
+	}
+
+	action := "configured"
+	if readErr == nil {
+		action = "appended"
+	}
+	return subToolResult{
+		name:   "CLAUDE.md",
+		action: action,
+	}
+}
+
+// cursorrulesMarker is the sentinel string used to detect the managed
+// block in .cursorrules. Same marker pattern as claudemdMarker.
+const cursorrulesMarker = claudemdMarker
+
+// ensureCursorrules creates or appends a managed block to .cursorrules
+// with instructions to read AGENTS.md and convention packs. Idempotent:
+// if the marker already exists, the file is not modified.
+// Uses opts.ReadFile/WriteFile for testability (dependency injection).
+func ensureCursorrules(opts *Options, lang string) subToolResult {
+	rulesPath := filepath.Join(opts.TargetDir, ".cursorrules")
+
+	existing, readErr := opts.ReadFile(rulesPath)
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return subToolResult{
+			name:   ".cursorrules",
+			action: "failed",
+			detail: fmt.Sprintf("read failed: %v", readErr),
+		}
+	}
+
+	if readErr == nil && strings.Contains(string(existing), cursorrulesMarker) {
+		return subToolResult{
+			name:   ".cursorrules",
+			action: "already configured",
+		}
+	}
+
+	packs := collectDeployedPacks(lang)
+	var block strings.Builder
+	block.WriteString(cursorrulesMarker + "\n\n")
+	block.WriteString("This project follows coding conventions defined in\n")
+	block.WriteString("AGENTS.md and enforced through convention packs. Before\n")
+	block.WriteString("writing or reviewing code, read the applicable convention\n")
+	block.WriteString("pack(s) from .opencode/uf/packs/ and apply all rules\n")
+	block.WriteString("marked [MUST].\n\n")
+	block.WriteString("Available packs:\n")
+	for _, p := range packs {
+		block.WriteString("- .opencode/uf/packs/" + p + "\n")
+	}
+	block.WriteString("\nFor engineering philosophy and coding principles, read\n")
+	block.WriteString(".opencode/agents/cobalt-crush-dev.md.\n\n")
+	block.WriteString("When reviewing code, consult the applicable reviewer\n")
+	block.WriteString("checklist from .opencode/agents/:\n")
+	block.WriteString("- divisor-guard.md — intent drift, constitution\n")
+	block.WriteString("- divisor-architect.md — structure, patterns, DRY\n")
+	block.WriteString("- divisor-adversary.md — security, error handling\n")
+	block.WriteString("- divisor-testing.md — test quality, assertions\n")
+	block.WriteString("- divisor-sre.md — operations, performance\n")
+
+	var content string
+	if readErr == nil {
+		content = string(existing)
+		if len(content) > 0 && !strings.HasSuffix(content, "\n\n") {
+			if !strings.HasSuffix(content, "\n") {
+				content += "\n"
+			}
+			content += "\n"
+		}
+	}
+	content += block.String()
+
+	if writeErr := opts.WriteFile(rulesPath, []byte(content), 0o644); writeErr != nil {
+		return subToolResult{
+			name:   ".cursorrules",
+			action: "failed",
+			detail: fmt.Sprintf("write failed: %v", writeErr),
+		}
+	}
+
+	action := "configured"
+	if readErr == nil {
+		action = "appended"
+	}
+	return subToolResult{
+		name:   ".cursorrules",
+		action: action,
+	}
+}
+
+// collectDeployedPacks returns the list of convention pack filenames
+// that would be deployed for the given resolved language. The list
+// always includes default.md, default-custom.md, severity.md,
+// content.md, and content-custom.md. Language-specific packs are
+// added when lang is not "default".
+func collectDeployedPacks(lang string) []string {
+	packs := []string{
+		"default.md",
+		"default-custom.md",
+		"severity.md",
+		"content.md",
+		"content-custom.md",
+	}
+	if lang != "" && lang != "default" {
+		packs = append(packs, lang+".md", lang+"-custom.md")
+	}
+	return packs
 }
 
 // workflowConfigContent is the default content for .uf/config.yaml.

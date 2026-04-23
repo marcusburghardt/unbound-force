@@ -3895,3 +3895,433 @@ func TestUFInitAsset_GuidanceBlockPresence(t *testing.T) {
 		}
 	}
 }
+
+// --- Cross-tool bridge tests ---
+
+func TestEnsureAGENTSmdPackSection_NoAGENTSmd(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureAGENTSmdPackSection(opts, "go")
+
+	if result.action != "skipped (no AGENTS.md)" {
+		t.Errorf("expected action 'skipped (no AGENTS.md)', got %q", result.action)
+	}
+}
+
+func TestEnsureAGENTSmdPackSection_ExistingWithoutSection(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := "# My Project\n\nSome content.\n"
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureAGENTSmdPackSection(opts, "go")
+
+	if result.action != "configured" {
+		t.Errorf("expected action 'configured', got %q", result.action)
+	}
+
+	content, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	text := string(content)
+
+	if !strings.HasPrefix(text, existing) {
+		t.Error("existing content not preserved")
+	}
+	if !strings.Contains(text, agentsmdPackMarker) {
+		t.Error("expected Convention Packs heading")
+	}
+	if !strings.Contains(text, ".opencode/uf/packs/go.md") {
+		t.Error("expected Go pack reference")
+	}
+	if !strings.Contains(text, ".opencode/uf/packs/default.md") {
+		t.Error("expected default pack reference")
+	}
+}
+
+func TestEnsureAGENTSmdPackSection_AlreadyConfigured(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := "# My Project\n\n## Convention Packs\n\nAlready here.\n"
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureAGENTSmdPackSection(opts, "go")
+
+	if result.action != "already configured" {
+		t.Errorf("expected action 'already configured', got %q", result.action)
+	}
+
+	after, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	if string(after) != existing {
+		t.Error("AGENTS.md should be unchanged when section already present")
+	}
+}
+
+func TestEnsureAGENTSmdPackSection_Idempotent(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := "# My Project\n"
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	r1 := ensureAGENTSmdPackSection(opts, "go")
+	if r1.action != "configured" {
+		t.Errorf("first call: expected 'configured', got %q", r1.action)
+	}
+
+	content1, _ := os.ReadFile(agentsPath)
+
+	r2 := ensureAGENTSmdPackSection(opts, "go")
+	if r2.action != "already configured" {
+		t.Errorf("second call: expected 'already configured', got %q", r2.action)
+	}
+
+	content2, _ := os.ReadFile(agentsPath)
+	if !bytes.Equal(content1, content2) {
+		t.Error("content should be identical after second call")
+	}
+}
+
+func TestEnsureCLAUDEmd_FreshDir(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCLAUDEmd(opts, "go")
+
+	if result.action != "configured" {
+		t.Errorf("expected action 'configured', got %q", result.action)
+	}
+
+	content, err := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	text := string(content)
+
+	if !strings.Contains(text, claudemdMarker) {
+		t.Error("expected marker in CLAUDE.md")
+	}
+	if !strings.Contains(text, "@AGENTS.md") {
+		t.Error("expected @AGENTS.md import")
+	}
+	if !strings.Contains(text, "@.opencode/agents/cobalt-crush-dev.md") {
+		t.Error("expected cobalt-crush @import")
+	}
+	if !strings.Contains(text, "@.opencode/uf/packs/go.md") {
+		t.Error("expected Go pack @import")
+	}
+	if !strings.Contains(text, "@.opencode/uf/packs/default.md") {
+		t.Error("expected default pack @import")
+	}
+	if !strings.Contains(text, "divisor-guard.md") {
+		t.Error("expected Divisor review agent reference")
+	}
+}
+
+func TestEnsureCLAUDEmd_ExistingWithoutMarker(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := "# My Project Claude Config\n\nSome rules.\n"
+	claudePath := filepath.Join(dir, "CLAUDE.md")
+	if err := os.WriteFile(claudePath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write CLAUDE.md: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCLAUDEmd(opts, "go")
+
+	if result.action != "appended" {
+		t.Errorf("expected action 'appended', got %q", result.action)
+	}
+
+	content, err := os.ReadFile(claudePath)
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	text := string(content)
+
+	if !strings.HasPrefix(text, existing) {
+		t.Error("existing content not preserved")
+	}
+	if !strings.Contains(text, claudemdMarker) {
+		t.Error("expected marker appended")
+	}
+}
+
+func TestEnsureCLAUDEmd_AlreadyConfigured(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := claudemdMarker + "\n\n@AGENTS.md\n"
+	claudePath := filepath.Join(dir, "CLAUDE.md")
+	if err := os.WriteFile(claudePath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write CLAUDE.md: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCLAUDEmd(opts, "go")
+
+	if result.action != "already configured" {
+		t.Errorf("expected action 'already configured', got %q", result.action)
+	}
+
+	after, err := os.ReadFile(claudePath)
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	if string(after) != existing {
+		t.Error("CLAUDE.md should be unchanged when marker already present")
+	}
+}
+
+func TestEnsureCLAUDEmd_Idempotent(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	r1 := ensureCLAUDEmd(opts, "go")
+	if r1.action != "configured" {
+		t.Errorf("first call: expected 'configured', got %q", r1.action)
+	}
+
+	content1, _ := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
+
+	r2 := ensureCLAUDEmd(opts, "go")
+	if r2.action != "already configured" {
+		t.Errorf("second call: expected 'already configured', got %q", r2.action)
+	}
+
+	content2, _ := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
+	if !bytes.Equal(content1, content2) {
+		t.Error("content should be identical after second call")
+	}
+}
+
+func TestEnsureCursorrules_FreshDir(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCursorrules(opts, "go")
+
+	if result.action != "configured" {
+		t.Errorf("expected action 'configured', got %q", result.action)
+	}
+
+	content, err := os.ReadFile(filepath.Join(dir, ".cursorrules"))
+	if err != nil {
+		t.Fatalf("read .cursorrules: %v", err)
+	}
+	text := string(content)
+
+	if !strings.Contains(text, cursorrulesMarker) {
+		t.Error("expected marker in .cursorrules")
+	}
+	if !strings.Contains(text, "AGENTS.md") {
+		t.Error("expected AGENTS.md reference")
+	}
+	if !strings.Contains(text, ".opencode/uf/packs/go.md") {
+		t.Error("expected Go pack reference")
+	}
+	if !strings.Contains(text, "cobalt-crush-dev.md") {
+		t.Error("expected cobalt-crush agent reference")
+	}
+	if !strings.Contains(text, "divisor-guard.md") {
+		t.Error("expected Divisor review agent reference")
+	}
+}
+
+func TestEnsureCursorrules_ExistingWithoutMarker(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := "Use TypeScript strict mode.\n"
+	rulesPath := filepath.Join(dir, ".cursorrules")
+	if err := os.WriteFile(rulesPath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write .cursorrules: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCursorrules(opts, "typescript")
+
+	if result.action != "appended" {
+		t.Errorf("expected action 'appended', got %q", result.action)
+	}
+
+	content, err := os.ReadFile(rulesPath)
+	if err != nil {
+		t.Fatalf("read .cursorrules: %v", err)
+	}
+	text := string(content)
+
+	if !strings.HasPrefix(text, existing) {
+		t.Error("existing content not preserved")
+	}
+	if !strings.Contains(text, ".opencode/uf/packs/typescript.md") {
+		t.Error("expected TypeScript pack reference")
+	}
+}
+
+func TestEnsureCursorrules_AlreadyConfigured(t *testing.T) {
+	dir := t.TempDir()
+
+	existing := cursorrulesMarker + "\n\nSome rules.\n"
+	rulesPath := filepath.Join(dir, ".cursorrules")
+	if err := os.WriteFile(rulesPath, []byte(existing), 0o644); err != nil {
+		t.Fatalf("write .cursorrules: %v", err)
+	}
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	result := ensureCursorrules(opts, "go")
+
+	if result.action != "already configured" {
+		t.Errorf("expected action 'already configured', got %q", result.action)
+	}
+}
+
+func TestEnsureCursorrules_Idempotent(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := &Options{
+		TargetDir: dir,
+		ReadFile:  os.ReadFile,
+		WriteFile: os.WriteFile,
+	}
+
+	r1 := ensureCursorrules(opts, "go")
+	if r1.action != "configured" {
+		t.Errorf("first call: expected 'configured', got %q", r1.action)
+	}
+
+	content1, _ := os.ReadFile(filepath.Join(dir, ".cursorrules"))
+
+	r2 := ensureCursorrules(opts, "go")
+	if r2.action != "already configured" {
+		t.Errorf("second call: expected 'already configured', got %q", r2.action)
+	}
+
+	content2, _ := os.ReadFile(filepath.Join(dir, ".cursorrules"))
+	if !bytes.Equal(content1, content2) {
+		t.Error("content should be identical after second call")
+	}
+}
+
+func TestCollectDeployedPacks_Go(t *testing.T) {
+	packs := collectDeployedPacks("go")
+
+	expected := map[string]bool{
+		"default.md":        true,
+		"default-custom.md": true,
+		"severity.md":       true,
+		"content.md":        true,
+		"content-custom.md": true,
+		"go.md":             true,
+		"go-custom.md":      true,
+	}
+
+	if len(packs) != len(expected) {
+		t.Errorf("expected %d packs, got %d: %v", len(expected), len(packs), packs)
+	}
+	for _, p := range packs {
+		if !expected[p] {
+			t.Errorf("unexpected pack %q", p)
+		}
+	}
+}
+
+func TestCollectDeployedPacks_TypeScript(t *testing.T) {
+	packs := collectDeployedPacks("typescript")
+
+	found := false
+	for _, p := range packs {
+		if p == "typescript.md" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected typescript.md in packs")
+	}
+}
+
+func TestCollectDeployedPacks_Default(t *testing.T) {
+	packs := collectDeployedPacks("default")
+
+	for _, p := range packs {
+		if p == "default.md" || p == "default-custom.md" ||
+			p == "severity.md" || p == "content.md" ||
+			p == "content-custom.md" {
+			continue
+		}
+		t.Errorf("unexpected pack %q for default lang", p)
+	}
+	if len(packs) != 5 {
+		t.Errorf("expected 5 packs for default lang, got %d", len(packs))
+	}
+}
