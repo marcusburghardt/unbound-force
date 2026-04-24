@@ -137,6 +137,7 @@ func Run(opts Options) (*Report, error) {
 		checkReplicator(&opts),
 		checkDewey(&opts),
 		checkConfiguration(&opts),
+		checkAgentContext(&opts),
 		checkScaffoldedFiles(&opts),
 		checkHeroAvailability(&opts),
 		checkMCPConfig(&opts),
