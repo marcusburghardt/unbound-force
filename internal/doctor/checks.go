@@ -1305,6 +1305,37 @@ func hasSpecNumberedDirs(specsDir string) bool {
 	return false
 }
 
+// checkBridgeFile checks whether a bridge file exists and
+// references AGENTS.md. The verb parameter describes the
+// relationship (e.g., "imports" for CLAUDE.md, "references"
+// for .cursorrules).
+func checkBridgeFile(opts *Options, filename, verb string) CheckResult {
+	name := "Bridge: " + filename
+	path := filepath.Join(opts.TargetDir, filename)
+	content, err := opts.ReadFile(path)
+	if err != nil {
+		return CheckResult{
+			Name:        name,
+			Severity:    Warn,
+			Message:     "not found",
+			InstallHint: "Run: /agent-brief in OpenCode",
+		}
+	}
+	if strings.Contains(string(content), "AGENTS.md") {
+		return CheckResult{
+			Name:     name,
+			Severity: Pass,
+			Message:  verb + " AGENTS.md",
+		}
+	}
+	return CheckResult{
+		Name:        name,
+		Severity:    Warn,
+		Message:     "exists but does not reference AGENTS.md",
+		InstallHint: "Run: /agent-brief in OpenCode",
+	}
+}
+
 // checkAgentContext validates AGENTS.md content quality with a
 // context-sensitive section taxonomy. Checks file existence,
 // Tier 1 section headers, build code blocks, line count,
@@ -1434,59 +1465,11 @@ func checkAgentContext(opts *Options) CheckGroup {
 		}
 	}
 
-	// Check #11: CLAUDE.md bridge.
-	claudePath := filepath.Join(opts.TargetDir, "CLAUDE.md")
-	claudeContent, claudeErr := opts.ReadFile(claudePath)
-	if claudeErr == nil {
-		if strings.Contains(string(claudeContent), "AGENTS.md") {
-			group.Results = append(group.Results, CheckResult{
-				Name:     "Bridge: CLAUDE.md",
-				Severity: Pass,
-				Message:  "imports AGENTS.md",
-			})
-		} else {
-			group.Results = append(group.Results, CheckResult{
-				Name:        "Bridge: CLAUDE.md",
-				Severity:    Warn,
-				Message:     "exists but does not reference AGENTS.md",
-				InstallHint: "Run: /agent-brief in OpenCode",
-			})
-		}
-	} else {
-		group.Results = append(group.Results, CheckResult{
-			Name:        "Bridge: CLAUDE.md",
-			Severity:    Warn,
-			Message:     "not found",
-			InstallHint: "Run: /agent-brief in OpenCode",
-		})
-	}
-
-	// Check #12: .cursorrules bridge.
-	cursorPath := filepath.Join(opts.TargetDir, ".cursorrules")
-	cursorContent, cursorErr := opts.ReadFile(cursorPath)
-	if cursorErr == nil {
-		if strings.Contains(string(cursorContent), "AGENTS.md") {
-			group.Results = append(group.Results, CheckResult{
-				Name:     "Bridge: .cursorrules",
-				Severity: Pass,
-				Message:  "references AGENTS.md",
-			})
-		} else {
-			group.Results = append(group.Results, CheckResult{
-				Name:        "Bridge: .cursorrules",
-				Severity:    Warn,
-				Message:     "exists but does not reference AGENTS.md",
-				InstallHint: "Run: /agent-brief in OpenCode",
-			})
-		}
-	} else {
-		group.Results = append(group.Results, CheckResult{
-			Name:        "Bridge: .cursorrules",
-			Severity:    Warn,
-			Message:     "not found",
-			InstallHint: "Run: /agent-brief in OpenCode",
-		})
-	}
+	// Checks #11-12: bridge files.
+	group.Results = append(group.Results,
+		checkBridgeFile(opts, "CLAUDE.md", "imports"),
+		checkBridgeFile(opts, ".cursorrules", "references"),
+	)
 
 	// Check #13: Branch protection instructions.
 	if branchProtectionPattern.Match(content) {
