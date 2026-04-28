@@ -1,4 +1,12 @@
-name: Test
+# SPDX-License-Identifier: Apache-2.0
+#
+# Local CI
+# ========
+# Project-specific checks that cannot be delegated to
+# org-infra reusable workflows: build, test with race
+# detection, and coverage ratchet enforcement.
+
+name: Local CI
 
 on:
   push:
@@ -6,9 +14,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Build & Test
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     env:
       GOTOOLCHAIN: auto
@@ -24,27 +39,8 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Vet
-        run: go vet ./...
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-
-      - name: Lint
-        run: golangci-lint run
-
       - name: Test
         run: go test -race -count=1 -coverprofile=coverage.out ./...
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: Vulnerability Check
-        run: govulncheck ./... || true
-        # govulncheck exits non-zero on Go stdlib vulns
-        # that require a toolchain upgrade. These are
-        # informational, not blocking. Dependency vulns
-        # in our code would still be caught and reported.
 
       - name: Enforce Coverage Ratchets
         run: |

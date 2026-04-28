@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Scheduled Jobs
+# ==============
+# Runs daily OSV-Scanner and OpenSSF Scorecards against
+# the default branch to detect newly-disclosed CVEs in
+# already-merged dependencies.
+
+name: Scheduled Jobs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+  actions: none
+  id-token: none
+  security-events: none
+
+jobs:
+  call_reusable_scheduled:
+    name: OSV-Scanner and Scorecards
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    uses: complytime/org-infra/.github/workflows/reusable_scheduled.yml@baf5b2e21e61581b4a3a129795286e8592e6afbb # v0.1.0

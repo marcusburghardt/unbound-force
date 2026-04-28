@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module.exports = {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'subject-case': [0, 'always', 'lower-case'],
+  },
+};

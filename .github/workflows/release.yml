@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Release
+# =======
+# Builds cross-platform binaries via GoReleaser, signs
+# macOS archives with Apple Developer ID, notarizes them,
+# and publishes to the Homebrew tap.
+
 name: Release
 
 on:
@@ -5,12 +13,17 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 45
     outputs:
       has_signing_secrets: ${{ steps.check-secrets.outputs.has_secrets }}
@@ -68,6 +81,8 @@ jobs:
     runs-on: macos-latest
     needs: release
     if: ${{ needs.release.outputs.has_signing_secrets == 'true' }}
+    permissions:
+      contents: write
     timeout-minutes: 30
     steps:
       - name: Import certificate into Keychain
@@ -76,13 +91,13 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
 
-          echo -n "$MACOS_SIGN_P12" | base64 --decode -o $RUNNER_TEMP/cert.p12
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import $RUNNER_TEMP/cert.p12 -P "$MACOS_SIGN_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          echo -n "$MACOS_SIGN_P12" | base64 --decode -o "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_SIGN_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
         env:
           MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
           MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
@@ -90,7 +105,7 @@ jobs:
       - name: Prepare notary key
         run: |
           set -euo pipefail
-          echo -n "$MACOS_NOTARY_KEY" | base64 --decode -o $RUNNER_TEMP/notary_key.p8
+          echo -n "$MACOS_NOTARY_KEY" | base64 --decode -o "$RUNNER_TEMP/notary_key.p8"
         env:
           MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
 

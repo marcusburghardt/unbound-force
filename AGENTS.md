@@ -29,7 +29,7 @@ Agents MUST NOT modify values that serve as quality or governance gates to make 
 1. **Coverage thresholds and CRAP scores** -- minimum coverage percentages, CRAP score limits, coverage ratchets
 2. **Severity definitions and auto-fix policies** -- CRITICAL/HIGH/MEDIUM/LOW boundaries, auto-fix eligibility rules
 3. **Convention pack rule classifications** -- MUST/SHOULD/MAY designations on convention pack rules (downgrading MUST to SHOULD is prohibited)
-4. **CI flags and linter configuration** -- `-race`, `-count=1`, `govulncheck`, `golangci-lint` rules, pinned action SHAs
+4. **CI flags and linter configuration** -- `-race`, `-count=1`, `OSV-Scanner`, `Trivy`, `golangci-lint` rules, pinned action SHAs
 5. **Agent temperature and tool-access settings** -- frontmatter `temperature`, `tools.write`, `tools.edit`, `tools.bash` restrictions
 6. **Constitution MUST rules** -- any MUST rule in `.specify/memory/constitution.md` or hero constitutions
 7. **Review iteration limits and worker concurrency** -- max review iterations, max concurrent Swarm workers, retry limits
@@ -742,6 +742,22 @@ golangci-lint run
 ```
 
 Always run tests with `-race -count=1`. CI enforces this.
+
+### CI Workflow Structure
+
+| Workflow | File | Triggers | Purpose |
+|---|---|---|---|
+| Local CI | `ci_local.yml` | push/PR to main | Build, test (`-race -count=1`), coverage ratchets |
+| CI Checks | `ci_checks.yml` | push/PR to main | MegaLinter (Go, Actions, Bash, Gitleaks) + commitlint |
+| Security | `ci_security.yml` | push/PR to main | OSV-Scanner, Trivy source scan, OpenSSF Scorecards |
+| Dependencies | `ci_dependencies.yml` | push/PR to main | Dependency review + dependabot auto-approval |
+| CRAP Load | `ci_crapload.yml` | PR to main | CRAP/GazeCRAP regression analysis + PR comment |
+| Scheduled | `ci_scheduled.yml` | daily midnight UTC | OSV-Scanner + OpenSSF Scorecards |
+| Release | `release.yml` | tag push (`v*`) | GoReleaser + macOS signing + Homebrew tap |
+
+All workflows consuming org-infra reusable workflows are
+SHA-pinned to `v0.1.0`. All workflows include SPDX headers,
+explicit permissions blocks, and concurrency groups.
 
 ### Embedding Model Alignment
 

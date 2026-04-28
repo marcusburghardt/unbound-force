@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# MegaLinter Configuration
+# ========================
+# Defines which linters and scanners run via the
+# reusable CI workflow (ci_checks.yml).
+#
+# https://megalinter.io/latest/supported-linters/
+
+ADDITIONAL_EXCLUDED_DIRECTORIES:
+  - vendor
+
+FILTER_REGEX_EXCLUDE: (vendor/)
+
+ENABLE_LINTERS:
+  - ACTION_ACTIONLINT
+  - BASH_SHELLCHECK
+  - GO_GOLANGCI_LINT
+  - REPOSITORY_GITLEAKS
+  # - MARKDOWN_MARKDOWNLINT
+  # - YAML_YAMLLINT

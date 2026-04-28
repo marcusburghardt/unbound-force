@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Security Checks
+# ================
+# Runs OSV-Scanner (dependency CVEs), Trivy source scan
+# (secrets and misconfigurations), and OpenSSF Scorecards
+# (supply chain security posture). Uploads SARIF results
+# to GitHub Security tab.
+
+name: Security Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: none
+  id-token: none
+  security-events: none
+  packages: none
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  call_reusable_vuln_scan:
+    name: OSV-Scanner
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@baf5b2e21e61581b4a3a129795286e8592e6afbb # v0.1.0
+    with:
+      enable_trivy_source: true
+
+  call_reusable_security:
+    name: OpenSSF Scorecards
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+    uses: complytime/org-infra/.github/workflows/reusable_security.yml@baf5b2e21e61581b4a3a129795286e8592e6afbb # v0.1.0
