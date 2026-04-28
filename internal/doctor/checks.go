@@ -1228,6 +1228,13 @@ var (
 	// specFrameworkPattern matches spec framework references.
 	specFrameworkPattern = regexp.MustCompile(
 		`(?i)(speckit|openspec|spec\s*(ification)?\s*framework)`)
+	// branchProtectionPattern matches instructions prohibiting
+	// direct commits to main. Covers patterns like
+	// "MUST NOT commit directly to main",
+	// "never commit to main", "prohibited...main".
+	branchProtectionPattern = regexp.MustCompile(
+		`(?i)(must\s+not|never|prohibited).*commit.*main|` +
+			`(?i)commit.*main.*(must\s+not|never|prohibited)`)
 )
 
 // detectAGENTSmdSections scans AGENTS.md content and returns
@@ -1478,6 +1485,22 @@ func checkAgentContext(opts *Options) CheckGroup {
 			Severity:    Warn,
 			Message:     "not found",
 			InstallHint: "Run: /agent-brief in OpenCode",
+		})
+	}
+
+	// Check #13: Branch protection instructions.
+	if branchProtectionPattern.Match(content) {
+		group.Results = append(group.Results, CheckResult{
+			Name:     "Branch protection",
+			Severity: Pass,
+			Message:  "direct-to-main prohibition found",
+		})
+	} else {
+		group.Results = append(group.Results, CheckResult{
+			Name:        "Branch protection",
+			Severity:    Warn,
+			Message:     "no explicit prohibition of direct commits to main",
+			InstallHint: "Add a Branch Protection section to AGENTS.md",
 		})
 	}
 

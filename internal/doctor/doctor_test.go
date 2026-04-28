@@ -3070,6 +3070,10 @@ Conventional commits, feature branches.
 
 Never modify coverage thresholds.
 
+### Branch Protection
+
+Agents MUST NOT commit directly to main.
+
 ## Constitution (Highest Authority)
 
 The org constitution at .specify/memory/constitution.md
@@ -3518,7 +3522,7 @@ func TestCheckAgentContext_FullPass(t *testing.T) {
 		t.Errorf("group name = %q, want Agent Context", group.Name)
 	}
 
-	// All 12 checks should be present and passing.
+	// All 13 checks should be present and passing.
 	for _, r := range group.Results {
 		if r.Severity != Pass {
 			t.Errorf("check %q: severity = %v, want Pass (message: %s)",
@@ -3528,11 +3532,73 @@ func TestCheckAgentContext_FullPass(t *testing.T) {
 
 	// Verify expected check count: 1 (existence) + 5 (tier1) +
 	// 1 (code blocks) + 1 (line count) + 1 (constitution) +
-	// 1 (spec framework) + 2 (bridges) = 12.
-	if len(group.Results) != 12 {
-		t.Errorf("expected 12 check results, got %d", len(group.Results))
+	// 1 (spec framework) + 2 (bridges) + 1 (branch protection)
+	// = 13.
+	if len(group.Results) != 13 {
+		t.Errorf("expected 13 check results, got %d", len(group.Results))
 		for _, r := range group.Results {
 			t.Logf("  %s: %v — %s", r.Name, r.Severity, r.Message)
 		}
 	}
+}
+
+func TestCheckAgentContext_BranchProtection(t *testing.T) {
+	t.Run("found when prohibition present", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "## Overview\n\n### Branch Protection\n\nAgents MUST NOT commit directly to main.\n"
+		createFile(t, dir, "AGENTS.md", content)
+
+		opts := &Options{TargetDir: dir, ReadFile: os.ReadFile}
+		group := checkAgentContext(opts)
+
+		found := false
+		for _, r := range group.Results {
+			if r.Name == "Branch protection" {
+				found = true
+				if r.Severity != Pass {
+					t.Errorf("severity = %v, want Pass", r.Severity)
+				}
+			}
+		}
+		if !found {
+			t.Error("Branch protection check not found in results")
+		}
+	})
+
+	t.Run("warning when missing", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "## Overview\n\nJust a project.\n"
+		createFile(t, dir, "AGENTS.md", content)
+
+		opts := &Options{TargetDir: dir, ReadFile: os.ReadFile}
+		group := checkAgentContext(opts)
+
+		found := false
+		for _, r := range group.Results {
+			if r.Name == "Branch protection" {
+				found = true
+				if r.Severity != Warn {
+					t.Errorf("severity = %v, want Warn", r.Severity)
+				}
+			}
+		}
+		if !found {
+			t.Error("Branch protection check not found in results")
+		}
+	})
+
+	t.Run("detects never-commit variant", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "## Overview\n\nNever commit directly to main.\n"
+		createFile(t, dir, "AGENTS.md", content)
+
+		opts := &Options{TargetDir: dir, ReadFile: os.ReadFile}
+		group := checkAgentContext(opts)
+
+		for _, r := range group.Results {
+			if r.Name == "Branch protection" && r.Severity != Pass {
+				t.Errorf("severity = %v, want Pass for 'never commit' variant", r.Severity)
+			}
+		}
+	})
 }

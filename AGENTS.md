@@ -114,6 +114,30 @@ Use `/review-council` before pushing to validate your
 own work. Use `/review-pr` after creating a PR to
 review any PR (yours or others').
 
+### Branch Protection
+
+Agents MUST NOT commit directly to `main`. All changes
+-- including documentation, archival, chores, and CI
+fixes -- MUST be committed on a feature branch and
+submitted via pull request.
+
+Before running `git commit`, verify the current branch:
+
+```bash
+git branch --show-current
+```
+
+If on `main`, create a branch first:
+
+```bash
+git checkout -b <type>/<short-description>
+```
+
+A direct commit to `main` is a process violation. If it
+occurs, immediately move the commit to a branch (via
+`git branch <name>` + `git reset`), restore `main`, and
+submit a PR instead.
+
 ## Constitution (Highest Authority)
 
 The org constitution at `.specify/memory/constitution.md` defines four core principles that govern all hero repositories:
