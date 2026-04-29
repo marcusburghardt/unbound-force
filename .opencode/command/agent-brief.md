@@ -182,7 +182,11 @@ comment explaining what to fill and why it matters:
 ## Git & Workflow
 <!-- TODO: Commit format, branching strategy, PR requirements.
      Example: "Conventional commits (type: description), feature
-     branches from main, 1 approving review required." -->
+     branches from main, 1 approving review required."
+     IMPORTANT: Include an explicit branch protection rule
+     stating agents MUST NOT commit directly to main. All
+     changes -- including docs, chores, and archives -- must
+     go through a feature branch and pull request. -->
 ```
 
 **Behavioral Constraints**:
@@ -191,6 +195,7 @@ comment explaining what to fill and why it matters:
 <!-- TODO: Things agents must NEVER do. Negative instructions are
      often more impactful than positive ones.
      Examples:
+     - "Never commit directly to main -- always use a feature branch."
      - "Never modify coverage thresholds to make tests pass."
      - "Never commit .env files or credentials."
      - "Never use os.Exit() in library code." -->
@@ -253,6 +258,12 @@ Record which sections are found and which are missing.
    constitution governs both frameworks. Look for co-occurrence
    of "constitution" with "both"/"all"/"regardless"/"openspec"
    within the spec framework or constitution section.
+7. **Branch protection**: Check if AGENTS.md contains explicit
+   instructions prohibiting direct commits to `main`. Look for
+   co-occurrence of "main" with "MUST NOT"/"never"/"prohibited"
+   in a branching, workflow, or constraints section. Flag if
+   absent -- agents without this instruction may commit directly
+   to the default branch.
 
 #### 4c: Scoring
 
